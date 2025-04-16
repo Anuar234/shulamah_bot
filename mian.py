@@ -1,6 +1,9 @@
 from typing import Final
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes 
+import os
+import speech_recognition as sr
+from pydub import AudioSegment
 
 TOKEN: Final = '7761997881:AAFaU_pEoDCO45O-weI1I_89fSOL866tmUE'
 BOT_USERNAME: Final = '@shulamah_info_bot'
@@ -19,6 +22,9 @@ async def custom_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def random_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('3 niggers gonna fuck u tonight')
+
+async def glazer_commad(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('u such a wonderful nigga')
 
 
 # Handle Responses
@@ -68,9 +74,42 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('Bot:', response)
     await update.message.reply_text(response)
 
+async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    voice = update.message.voice
+    file_id = voice.file_id
+    print(f'Voice message received. File ID: {file_id}')
 
-async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(f'Update {update} caused error {context.err}')
+    # Download the .ogg voice message
+    ogg_path = "voice_message.ogg"
+    wav_path = "voice_message.wav"
+
+    new_file = await context.bot.get_file(file_id)
+    await new_file.download_to_drive(ogg_path)
+
+    # Convert OGG to WAV using pydub
+    audio = AudioSegment.from_file(ogg_path)
+    audio.export(wav_path, format="wav")
+
+    # Recognize text from WAV
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(wav_path) as source:
+        audio_data = recognizer.record(source)
+        try:
+            text = recognizer.recognize_google(audio_data, language="en-US")  # You can use "ru-RU" or "kk-KZ"
+            print("Recognized:", text)
+            await update.message.reply_text(f"You said: {text}")
+        except sr.UnknownValueError:
+            await update.message.reply_text("Sorry, I couldn't understand the voice message.")
+        except sr.RequestError as e:
+            await update.message.reply_text(f"Error with Google API: {e}")
+
+    # Clean up files
+    os.remove(ogg_path)
+    os.remove(wav_path)
+    
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    print(f'Update {update} caused error {context.error}')
+
 
 if __name__ == '__main__':
     print('Starting bot...')
@@ -81,13 +120,16 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler('help', help_command))
     app.add_handler(CommandHandler('custom', custom_command))
     app.add_handler(CommandHandler('random', random_command))
+    app.add_handler(CommandHandler('glazer', glazer_commad))
+    app.add_handler(MessageHandler(filters.VOICE, handle_voice_message))  # ✅ add voice handler
+
 
     #messages
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
 
 
     # errors
-    app.add_error_handler(error)
+    app.add_error_handler(error_handler)
 
 
     #polls the bot
