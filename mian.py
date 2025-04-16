@@ -4,6 +4,9 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import os
 import speech_recognition as sr
 from pydub import AudioSegment
+from gtts import gTTS
+import tempfile
+import asyncio
 
 TOKEN: Final = '7761997881:AAFaU_pEoDCO45O-weI1I_89fSOL866tmUE'
 BOT_USERNAME: Final = '@shulamah_info_bot'
@@ -42,15 +45,19 @@ def handle_response(text: str) -> str:
     if 'anuar' in processed:
         return 'you mean THE GOAT?'
     if 'surik' in processed:
-        return 'ohh that`s chinese kotakbas'
+        return 'ohh thats chinese kotakbas'
     if 'alpa' in processed:
-        return 'that`s a cobalt of privet '
+        return 'thats a cobalt of privet '
     if 'nura' in processed:
         return 'oh you mean woody from Toy Story?'
     if 'ibra' in processed:
         return 'sektant'
     if 'aldik' in processed:
         return 'main mongol'
+    if 'suka' in processed:
+        return 'che ahuel suka'
+    if 'anus' in processed:
+        return 'иди нахуй'
     
     return 'write "hello", "what", "surik" "ibra", "nura" , "alpa", "aldik", "anuar" to that '
 
@@ -74,39 +81,56 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('Bot:', response)
     await update.message.reply_text(response)
 
+
 async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    asyncio.create_task(process_voice(update, context))
+    await update.message.reply_text("Processing your voice message...")
+
+async def process_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     voice = update.message.voice
     file_id = voice.file_id
-    print(f'Voice message received. File ID: {file_id}')
-
-    # Download the .ogg voice message
     ogg_path = "voice_message.ogg"
     wav_path = "voice_message.wav"
 
-    new_file = await context.bot.get_file(file_id)
-    await new_file.download_to_drive(ogg_path)
+    try:
+        new_file = await context.bot.get_file(file_id)
+        await new_file.download_to_drive(ogg_path)
 
-    # Convert OGG to WAV using pydub
-    audio = AudioSegment.from_file(ogg_path)
-    audio.export(wav_path, format="wav")
+        audio = AudioSegment.from_file(ogg_path)
+        audio.export(wav_path, format="wav")
 
-    # Recognize text from WAV
-    recognizer = sr.Recognizer()
-    with sr.AudioFile(wav_path) as source:
-        audio_data = recognizer.record(source)
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(wav_path) as source:
+            audio_data = recognizer.record(source)
+
         try:
-            text = recognizer.recognize_google(audio_data, language="en-US")  # You can use "ru-RU" or "kk-KZ"
+            text = recognizer.recognize_google(audio_data, language="en-US")
             print("Recognized:", text)
-            await update.message.reply_text(f"You said: {text}")
-        except sr.UnknownValueError:
-            await update.message.reply_text("Sorry, I couldn't understand the voice message.")
-        except sr.RequestError as e:
-            await update.message.reply_text(f"Error with Google API: {e}")
 
-    # Clean up files
-    os.remove(ogg_path)
-    os.remove(wav_path)
-    
+            # Generate response with gTTS
+            tts = gTTS(text="You said: " + text)
+            mp3_path = "response.mp3"
+            tts.save(mp3_path)
+
+            with open(mp3_path, 'rb') as audio_file:
+                await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio_file)
+
+            os.remove(mp3_path)
+        except sr.UnknownValueError:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I couldn't understand that.")
+        except sr.RequestError as e:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Google API error: {e}")
+
+    except Exception as e:
+        print("Processing error:", e)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="An error occurred while processing your voice message.")
+
+    finally:
+        if os.path.exists(ogg_path):
+            os.remove(ogg_path)
+        if os.path.exists(wav_path):
+            os.remove(wav_path)
+
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f'Update {update} caused error {context.error}')
 
@@ -135,4 +159,3 @@ if __name__ == '__main__':
     #polls the bot
     print('Polling...')
     app.run_polling(poll_interval=3)
-
