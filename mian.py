@@ -7,8 +7,12 @@ from pydub import AudioSegment
 from gtts import gTTS
 import tempfile
 import asyncio
+from dotenv import load_dotenv
+# Load the environment variables from the .env file
+load_dotenv()
 
-TOKEN: Final = '7761997881:AAFaU_pEoDCO45O-weI1I_89fSOL866tmUE'
+# Now, load the token from the environment variable
+TOKEN = os.getenv("TOKEN")
 BOT_USERNAME: Final = '@shulamah_info_bot'
 
 
