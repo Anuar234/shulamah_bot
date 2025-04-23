@@ -71,30 +71,17 @@ async def download_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = context.args[0]
     await update.message.reply_text("Downloading video... Please wait ⏳")
 
+    # Update yt-dlp options to maintain original quality and aspect ratio
     ydl_opts = {
-    'format': 'bestvideo[height<=360]+bestaudio/best[height<=360]',
-    'outtmpl': 'downloads/%(title)s.%(ext)s',
-    'prefer_ffmpeg': True,
-    'merge_output_format': 'mp4',
-    'postprocessor_args': [
-        '-c:v', 'libx264',
-        '-profile:v', 'high',
-        '-level', '3.0',
-        '-preset', 'fast',
-        '-crf', '28',      # more compression
-        '-r', '24',        # 24 fps
-        '-c:a', 'aac',
-        '-b:a', '64k',     # lower audio bitrate
-        '-movflags', '+faststart',
-    ],
-    'postprocessors': [{
-        'key': 'FFmpegVideoConvertor',
-        'preferedformat': 'mp4',
-    }],
-}
-
-
-
+        'format': 'bestvideo+bestaudio/best',  # Download best video and audio quality available
+        'outtmpl': 'downloads/%(title)s.%(ext)s',  # Save video with original title
+        'prefer_ffmpeg': True,  # Use ffmpeg for merging if necessary
+        'merge_output_format': 'mp4',  # Ensure the final format is mp4
+        'quiet': True,  # Hide yt-dlp output
+        'noplaylist': True,  # Disable playlist download if it's a playlist link
+        'progress_hooks': [lambda d: print(f"[{d['status']}] {d.get('_percent_str', '')} {d.get('_eta_str', '')}")],
+        # No post-processing to avoid re-encoding and loss of quality
+    }
 
     try:
         os.makedirs("downloads", exist_ok=True)
@@ -103,11 +90,12 @@ async def download_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"Download complete: {file_path}")  # Confirm it worked
 
         file_size = os.path.getsize(file_path)
-        if file_size > 200 * 1024 * 1024:  # Check file size (50MB limit)
-            await update.message.reply_text("⚠️ Video is too large to send via Telegram (limit is 50 MB).")
+        if file_size > 1.75 * 1024 * 1024 * 1024:  # Check file size (50MB limit)
+            await update.message.reply_text("⚠️ Video is too large to send via Telegram (limit is 300 MB).")
             os.remove(file_path)
             return
 
+        # Send the downloaded video
         with open(file_path, 'rb') as video_file:
             await update.message.reply_video(video=video_file)
 
@@ -121,6 +109,7 @@ async def download_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"⚠️ An unexpected error occurred: {e}")
         print("Unexpected error:", e)
+
 
 # Voice message handler
 async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
