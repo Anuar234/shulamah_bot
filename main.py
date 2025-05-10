@@ -20,19 +20,19 @@ BOT_USERNAME: Final = '@shulamah_info_bot'
 
 # --- Commands ---
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello! I'm your helpful bot 😊")
+    await update.message.reply_text("Wassup, Ima help you to do something w me")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Ask me something or use /download [YouTube URL] to get a video!")
+    await update.message.reply_text("Use default command, displayed in this bot through \\")
 
 async def custom_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Custom functionality is under construction!")
+    await update.message.reply_text("Ima thinking about it, works are still on process")
 
 async def random_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Here's something random!")
+    await update.message.reply_text("Gives random music to you")
 
 async def glazer_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("You're doing great today! Keep it up!")
+    await update.message.reply_text("Ima glaze you")
 
 async def random_fact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = "https://uselessfacts.jsph.pl/random.json?language=en"
