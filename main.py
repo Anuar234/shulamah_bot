@@ -8,8 +8,6 @@ from utils.audio_utils import random_local_image, download_audio
 from utils.download_video import download_command
 from utils.random_fact import random_fact
 from handlers.message_handlers import error_handler
-from handlers.command_handlers import spotify_command
-from spotify_api import get_spotify_oauth, get_spotify_instance
 
 
 
